@@ -2,16 +2,20 @@ const chatBox = document.getElementById('chat-box');
 const messageInput = document.getElementById('message-input');
 let username = '';
 
-const pusher = new Pusher('YOUR_PUSHER_APP_KEY', {
-    cluster: 'YOUR_PUSHER_CLUSTER',
-    encrypted: true
-});
+// Initialize Firebase with your project config
+const firebaseConfig = {
+  apiKey: 'YOUR_FIREBASE_API_KEY',
+  authDomain: 'YOUR_FIREBASE_AUTH_DOMAIN',
+  projectId: 'YOUR_FIREBASE_PROJECT_ID',
+  storageBucket: 'YOUR_FIREBASE_STORAGE_BUCKET',
+  messagingSenderId: 'YOUR_FIREBASE_MESSAGING_SENDER_ID',
+  appId: 'YOUR_FIREBASE_APP_ID',
+};
 
-const channel = pusher.subscribe('chat_channel');
+firebase.initializeApp(firebaseConfig);
 
-channel.bind('message', function(data) {
-    displayMessage(data);
-});
+// Reference to the 'messages' node in the database
+const messagesRef = firebase.database().ref('messages');
 
 function setUsername() {
     username = document.getElementById('username-input').value.trim();
@@ -26,7 +30,7 @@ function sendMessage() {
     const message = messageInput.value.trim();
     if (message !== '' && username !== '') {
         const formattedMessage = { username, message };
-        channel.trigger('message', formattedMessage);
+        messagesRef.push(formattedMessage);
         displayMessage(formattedMessage);
 
         // Clear the input field after sending the message
@@ -47,4 +51,11 @@ function displayMessage(message) {
     // Scroll to the bottom to show the latest message
     chatBox.scrollTop = chatBox.scrollHeight;
 }
+
+// Listen for new messages from the database
+messagesRef.on('child_added', (snapshot) => {
+    const message = snapshot.val();
+    displayMessage(message);
+});
+
 
